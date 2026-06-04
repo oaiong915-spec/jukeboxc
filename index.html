@@ -381,7 +381,7 @@ window.onYouTubeIframeAPIReady = function() {
     height:'120', width:'100%',
     playerVars:{ autoplay:0, rel:0, modestbranding:1 },
     events:{
-      onReady(){ ytReady.bgm=true; if(pending.bgm){_load('bgm',pending.bgm,pending.bgmSeek);pending.bgm=null;} },
+      onReady(){ ytReady.bgm=true; yt.bgm.setVolume(parseInt(document.getElementById('bgmVol').value)); if(pending.bgm){_load('bgm',pending.bgm,pending.bgmSeek);pending.bgm=null;} },
       onStateChange(e){
         if(e.data===1) setUI('bgm',true);
         if(e.data===2) setUI('bgm',false);
@@ -397,7 +397,7 @@ window.onYouTubeIframeAPIReady = function() {
     height:'120', width:'100%',
     playerVars:{ autoplay:0, rel:0, modestbranding:1 },
     events:{
-      onReady(){ ytReady.sfx=true; if(pending.sfx){_load('sfx',pending.sfx,pending.sfxSeek);pending.sfx=null;} },
+      onReady(){ ytReady.sfx=true; yt.sfx.setVolume(parseInt(document.getElementById('sfxVol').value)); if(pending.sfx){_load('sfx',pending.sfx,pending.sfxSeek);pending.sfx=null;} },
       onStateChange(e){
         if(e.data===1) setUI('sfx',true);
         if(e.data===2||e.data===0) setUI('sfx',false);
@@ -484,6 +484,7 @@ function enterApp() {
     const el=document.getElementById(id); if(el) el.style.display=S.role==='GM'?'':'none';
   });
   if(S.role==='GUEST'){
+    // 재생 컨트롤만 비활성화, 볼륨 슬라이더는 게스트도 조절 가능
     ['bgmShuffle','bgmPrev','bgmPlay','bgmNext','bgmRepeat','sfxPrev','sfxPlay','sfxNext','sfxStop'].forEach(id=>{
       const el=document.getElementById(id); if(el) el.disabled=true;
     });
