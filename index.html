@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JUKEBOX</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --blue:#1A6FE8; --blue2:#3B8BFF; --bluedim:#D6E8FF;
+  --bluebg:#EBF3FF; --white:#fff; --offwhite:#F4F7FF;
+  --border:#B8D0F8; --text:#0D2A5C; --subtext:#5578A8;
+}
+body { font-family:'Noto Sans KR',sans-serif; background:var(--offwhite); color:var(--text); min-height:100vh; }
+.app { display:flex; flex-direction:column; min-height:100vh; }
+
+/* HEADER */
+.header { background:var(--blue); padding:0 20px; display:flex; align-items:center; justify-content:space-between; height:52px; border-bottom:3px solid #0D4DB5; }
+.logo { font-family:'DotGothic16',monospace; font-size:28px; color:#fff; letter-spacing:4px; text-shadow:3px 3px 0 #0D4DB5; user-select:none; }
+.logo-note { display:inline-block; margin-right:6px; animation:bouncenote 1s infinite alternate; }
+@keyframes bouncenote { from{transform:translateY(0)} to{transform:translateY(-3px)} }
+.badge { font-family:'DotGothic16',monospace; font-size:11px; padding:3px 10px; border:2px solid #fff; color:#fff; background:transparent; letter-spacing:1px; cursor:pointer; transition:background .15s,color .15s; }
+.badge:hover,.badge.active { background:#fff; color:var(--blue); }
+
+/* LAYOUT */
+.main { display:grid; grid-template-columns:260px 1fr; flex:1; }
+.sidebar { background:var(--white); border-right:2px solid var(--border); display:flex; flex-direction:column; }
+.sidebar-section { border-bottom:2px dashed var(--bluedim); padding:14px; }
+
+.sec-title { font-family:'DotGothic16',monospace; font-size:12px; color:var(--blue); letter-spacing:2px; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+.sec-title::before { content:''; display:inline-block; width:8px; height:8px; background:var(--blue); }
+
+.room-item { font-family:'DotGothic16',monospace; font-size:12px; padding:7px 10px; border:2px solid var(--border); background:var(--offwhite); cursor:pointer; letter-spacing:1px; color:var(--text); display:flex; align-items:center; gap:6px; margin-bottom:6px; transition:border-color .15s,background .15s; }
+.room-item:hover { border-color:var(--blue); background:var(--bluebg); }
+.room-item.active { border-color:var(--blue); background:var(--bluedim); color:var(--blue); }
+.room-item-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.room-item-count { font-size:10px; color:var(--subtext); background:var(--bluedim); padding:1px 5px; border:1px solid var(--border); flex-shrink:0; }
+.room-del,.track-del { font-size:10px; color:#ccc; cursor:pointer; flex-shrink:0; }
+.room-del:hover,.track-del:hover { color:#e24b4a; }
+
+input.dot-input { font-family:'DotGothic16',monospace; font-size:12px; border:2px solid var(--border); background:var(--offwhite); color:var(--text); padding:6px 8px; outline:none; flex:1; letter-spacing:1px; min-width:0; width:100%; }
+input.dot-input:focus { border-color:var(--blue); background:var(--white); }
+button.dot-btn { font-family:'DotGothic16',monospace; font-size:11px; border:2px solid var(--blue); background:var(--blue); color:#fff; padding:6px 10px; cursor:pointer; letter-spacing:1px; transition:background .15s; white-space:nowrap; }
+button.dot-btn:hover { background:#0D4DB5; border-color:#0D4DB5; }
+button.dot-btn.outline { background:var(--white); color:var(--blue); }
+button.dot-btn.outline:hover { background:var(--bluebg); }
+select.dot-select { font-family:'DotGothic16',monospace; font-size:11px; border:2px solid var(--border); background:var(--offwhite); color:var(--text); padding:5px 6px; outline:none; cursor:pointer; }
+select.dot-select:focus { border-color:var(--blue); }
+
+/* CONTENT */
+.content { display:flex; flex-direction:column; padding:18px; gap:14px; }
+.player-card { border:2px solid var(--blue); background:var(--white); padding:16px; }
+.player-top { display:flex; align-items:flex-start; gap:14px; margin-bottom:14px; }
+.album-art { width:70px; height:70px; background:var(--bluedim); border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:30px; flex-shrink:0; position:relative; overflow:hidden; }
+.album-art .vinyl { position:absolute; width:40px; height:40px; border-radius:50%; border:3px solid var(--blue); background:var(--white); animation:spin 3s linear infinite; opacity:0; transition:opacity .3s; }
+.album-art.playing .vinyl { opacity:.5; }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+.now-label { font-family:'DotGothic16',monospace; font-size:10px; color:var(--blue2); letter-spacing:2px; margin-bottom:4px; }
+.now-title { font-family:'DotGothic16',monospace; font-size:15px; color:var(--text); letter-spacing:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:3px; }
+.now-sub { font-size:11px; color:var(--subtext); }
+.equalizer { display:flex; align-items:flex-end; gap:2px; height:20px; margin-top:8px; opacity:0; transition:opacity .3s; }
+.equalizer.active { opacity:1; }
+.eq-bar { width:4px; background:var(--blue); border-radius:1px; animation:eqb .5s infinite alternate; }
+.eq-bar:nth-child(2){animation-delay:.1s} .eq-bar:nth-child(3){animation-delay:.2s} .eq-bar:nth-child(4){animation-delay:.05s} .eq-bar:nth-child(5){animation-delay:.15s}
+@keyframes eqb { from{height:4px} to{height:20px} }
+
+/* YT PLAYER */
+#yt-player-wrap { margin-bottom:14px; display:none; }
+#yt-player-wrap.visible { display:block; }
+#yt-player-wrap iframe { width:100%; height:220px; border:2px solid var(--border); display:block; }
+
+.controls-row { display:flex; align-items:center; justify-content:center; gap:8px; }
+.ctrl-btn { font-family:'DotGothic16',monospace; font-size:13px; width:34px; height:34px; border:2px solid var(--border); background:var(--offwhite); color:var(--text); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:border-color .15s,background .15s; }
+.ctrl-btn:hover { border-color:var(--blue); background:var(--bluebg); color:var(--blue); }
+.ctrl-btn.play-btn { width:44px; height:44px; border:2px solid var(--blue); background:var(--blue); color:#fff; font-size:16px; }
+.ctrl-btn.play-btn:hover { background:#0D4DB5; }
+.ctrl-btn.on { color:var(--blue); border-color:var(--blue); background:var(--bluebg); }
+.vol-row { display:flex; align-items:center; gap:6px; margin-left:8px; font-family:'DotGothic16',monospace; font-size:11px; color:var(--subtext); }
+input[type=range] { width:70px; accent-color:var(--blue); }
+
+.yt-add-card { border:2px dashed var(--border); background:var(--white); padding:14px; }
+.yt-add-card .row { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+
+.queue-card { border:2px solid var(--border); background:var(--white); }
+.queue-header { padding:10px 14px; background:var(--bluebg); border-bottom:2px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.track-row { display:flex; align-items:center; gap:10px; padding:9px 14px; border-bottom:1px dashed var(--bluedim); cursor:pointer; transition:background .15s; }
+.track-row:last-child { border-bottom:none; }
+.track-row:hover { background:var(--bluebg); }
+.track-row.playing { background:var(--bluedim); }
+.track-num { font-family:'DotGothic16',monospace; font-size:11px; color:var(--subtext); min-width:18px; text-align:center; }
+.track-row.playing .track-num { color:var(--blue); }
+.track-thumb { width:34px; height:34px; background:var(--bluedim); border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+.track-row.playing .track-thumb { border-color:var(--blue); }
+.track-info { flex:1; min-width:0; }
+.track-name { font-size:12px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.track-row.playing .track-name { color:var(--blue); }
+.track-tag { font-family:'DotGothic16',monospace; font-size:10px; color:var(--subtext); }
+.empty-queue { font-family:'DotGothic16',monospace; font-size:12px; color:var(--subtext); text-align:center; padding:28px; }
+
+.toast { position:fixed; bottom:20px; right:20px; font-family:'DotGothic16',monospace; font-size:12px; background:var(--blue); color:#fff; padding:10px 18px; border:2px solid #0D4DB5; opacity:0; transform:translateY(10px); transition:opacity .3s,transform .3s; z-index:999; pointer-events:none; }
+.toast.show { opacity:1; transform:translateY(0); }
+
+.notice { font-family:'DotGothic16',monospace; font-size:11px; background:#fffbe6; border:2px solid #fbbf24; color:#92400e; padding:8px 12px; letter-spacing:1px; display:flex; align-items:center; gap:8px; }
+</style>
+</head>
+<body>
+<div class="app">
+<header class="header">
+  <div class="logo"><span class="logo-note">♪</span>JUKEBOX</div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <button class="badge active" id="gmBtn" onclick="setRole('GM')">GM</button>
+    <button class="badge" id="guestBtn" onclick="setRole('GUEST')">GUEST</button>
+  </div>
+</header>
+
+<div class="main">
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sec-title">ROOMS</div>
+      <div id="roomList"></div>
+      <div style="display:flex;gap:6px;margin-top:4px;" id="gmRoomAdd">
+        <input class="dot-input" id="newRoomName" placeholder="방 이름..." maxlength="20" style="font-size:11px;">
+        <button class="dot-btn" onclick="createRoom()">+</button>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sec-title">SAVE / LOAD</div>
+      <div style="display:flex;flex-direction:column;gap:7px;">
+        <button class="dot-btn" onclick="saveRoom()">💾 현재 방 저장</button>
+        <button class="dot-btn outline" onclick="exportAll()">📤 전체 내보내기</button>
+        <label class="dot-btn outline" style="text-align:center;cursor:pointer;display:block;">📥 불러오기<input type="file" accept=".json" style="display:none" onchange="importRooms(event)"></label>
+      </div>
+    </div>
+    <div class="sidebar-section" style="flex:1;">
+      <div class="sec-title">FOLDERS</div>
+      <div id="folderList" style="display:flex;flex-direction:column;gap:5px;"></div>
+      <div style="margin-top:8px;display:flex;gap:6px;" id="gmFolderAdd">
+        <input class="dot-input" id="newFolderName" placeholder="폴더명..." maxlength="12" style="font-size:11px;">
+        <button class="dot-btn" onclick="addFolder()">+</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div id="localNotice" class="notice" style="display:none;">
+      ⚠ file:// 로 열면 유튜브 재생이 안 돼요! 아래 <b>start.bat</b> (Windows) 또는 <b>start.sh</b> (Mac) 를 실행해서 여세요.
+    </div>
+
+    <div class="player-card">
+      <div class="player-top">
+        <div class="album-art" id="albumArt">
+          <span>♪</span>
+          <div class="vinyl"></div>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div class="now-label">▶ NOW PLAYING</div>
+          <div class="now-title" id="nowTitle">-- 트랙을 선택하세요 --</div>
+          <div class="now-sub" id="nowSub"></div>
+          <div class="equalizer" id="equalizer">
+            <div class="eq-bar" style="height:8px"></div>
+            <div class="eq-bar" style="height:14px"></div>
+            <div class="eq-bar" style="height:10px"></div>
+            <div class="eq-bar" style="height:18px"></div>
+            <div class="eq-bar" style="height:6px"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="yt-player-wrap">
+        <div id="yt-player"></div>
+      </div>
+
+      <div class="controls-row">
+        <button class="ctrl-btn" id="shuffleBtn" onclick="toggleShuffle()" title="셔플">⇄</button>
+        <button class="ctrl-btn" onclick="prevTrack()">◁◁</button>
+        <button class="ctrl-btn play-btn" id="playBtn" onclick="togglePlay()">▶</button>
+        <button class="ctrl-btn" onclick="nextTrack()">▷▷</button>
+        <button class="ctrl-btn" id="repeatBtn" onclick="toggleRepeat()">↺</button>
+        <div class="vol-row">♪ <input type="range" min="0" max="100" value="80" step="1" id="volSlider" oninput="onVol(this.value)"></div>
+      </div>
+    </div>
+
+    <div class="yt-add-card" id="addTrackSection">
+      <div class="sec-title" style="margin-bottom:8px;">+ 트랙 추가</div>
+      <input class="dot-input" id="ytUrl" placeholder="YouTube URL 붙여넣기...">
+      <div class="row">
+        <input class="dot-input" id="ytTitle" placeholder="제목 (선택)" style="flex:1;">
+        <select class="dot-select" id="ytFolder"></select>
+        <button class="dot-btn" onclick="addTrack()">추가 ▷</button>
+      </div>
+    </div>
+
+    <div class="queue-card">
+      <div class="queue-header">
+        <div class="sec-title" style="margin:0;">♪ 큐 목록 <span id="queueCount" style="font-size:10px;color:var(--subtext);margin-left:4px;"></span></div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <select class="dot-select" id="filterFolder" onchange="renderQueue()"><option value="">전체</option></select>
+          <button class="dot-btn outline" style="font-size:10px;padding:4px 8px;" onclick="clearQueue()" id="gmClear">전체 삭제</button>
+        </div>
+      </div>
+      <div id="queueList"></div>
+    </div>
+  </main>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// file:// 감지
+if (location.protocol === 'file:') {
+  document.getElementById('localNotice').style.display = 'flex';
+}
+
+var ytPlayer = null, ytApiReady = false, pendingVideoId = null;
+
+window.onYouTubeIframeAPIReady = function() {
+  ytApiReady = true;
+  ytPlayer = new YT.Player('yt-player', {
+    height: '220', width: '100%',
+    playerVars: { autoplay:0, rel:0, modestbranding:1 },
+    events: {
+      onReady: function(e) {
+        e.target.setVolume(parseInt(document.getElementById('volSlider').value));
+        if (pendingVideoId) { loadAndPlay(pendingVideoId); pendingVideoId = null; }
+      },
+      onStateChange: function(e) {
+        if (e.data === YT.PlayerState.PLAYING) setPlayingUI(true);
+        if (e.data === YT.PlayerState.PAUSED)  setPlayingUI(false);
+        if (e.data === YT.PlayerState.ENDED) {
+          if (state.repeat) { ytPlayer.seekTo(0); ytPlayer.playVideo(); }
+          else nextTrack();
+        }
+      },
+      onError: function(e) {
+        showToast('⚠ 이 영상은 임베드가 차단된 영상이에요! 다른 링크를 써보세요.');
+        setPlayingUI(false);
+      }
+    }
+  });
+};
+
+// YT API 동적 로드
+(function(){
+  var s = document.createElement('script');
+  s.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(s);
+})();
+
+function loadAndPlay(videoId) {
+  document.getElementById('yt-player-wrap').classList.add('visible');
+  if (ytPlayer && ytPlayer.loadVideoById) {
+    ytPlayer.loadVideoById(videoId);
+  } else {
+    pendingVideoId = videoId;
+  }
+}
+
+function onVol(v) { if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(parseInt(v)); }
+
+// ── STATE ──
+var state = {
+  rooms: JSON.parse(localStorage.getItem('jb_rooms') || '{}'),
+  currentRoom: localStorage.getItem('jb_currentRoom') || '',
+  role:'GM', shuffle:false, repeat:false, currentIdx:-1, playing:false
+};
+if (!Object.keys(state.rooms).length) state.rooms['기본 방'] = { folders:['긴장','분위기','일상'], tracks:[] };
+if (!state.currentRoom || !state.rooms[state.currentRoom]) state.currentRoom = Object.keys(state.rooms)[0];
+
+function rd() { if (!state.rooms[state.currentRoom]) state.rooms[state.currentRoom]={folders:[],tracks:[]}; return state.rooms[state.currentRoom]; }
+function saveState() { localStorage.setItem('jb_rooms',JSON.stringify(state.rooms)); localStorage.setItem('jb_currentRoom',state.currentRoom); }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function showToast(msg) { var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(function(){t.classList.remove('show');},2500); }
+
+function setRole(r) {
+  state.role=r;
+  document.getElementById('gmBtn').classList.toggle('active',r==='GM');
+  document.getElementById('guestBtn').classList.toggle('active',r==='GUEST');
+  ['gmRoomAdd','gmFolderAdd','addTrackSection','gmClear'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.style.display=r==='GM'?'':'none';
+  });
+}
+
+// ROOMS
+function renderRooms() {
+  var list=document.getElementById('roomList'); list.innerHTML='';
+  Object.keys(state.rooms).forEach(function(name){
+    var d=document.createElement('div');
+    d.className='room-item'+(name===state.currentRoom?' active':'');
+    d.innerHTML='<span class="room-item-name">'+esc(name)+'</span>'
+      +'<span class="room-item-count">'+((state.rooms[name].tracks||[]).length)+'</span>'
+      +'<span class="room-del">✕</span>';
+    d.querySelector('.room-del').onclick=function(e){e.stopPropagation();deleteRoom(name);};
+    d.onclick=function(){switchRoom(name);};
+    list.appendChild(d);
+  });
+}
+function switchRoom(name) {
+  state.currentRoom=name; state.currentIdx=-1; state.playing=false;
+  if(ytPlayer&&ytPlayer.stopVideo) ytPlayer.stopVideo();
+  document.getElementById('yt-player-wrap').classList.remove('visible');
+  document.getElementById('nowTitle').textContent='-- 트랙을 선택하세요 --';
+  document.getElementById('nowSub').textContent='';
+  setPlayingUI(false); saveState(); renderAll();
+}
+function createRoom() {
+  var name=document.getElementById('newRoomName').value.trim();
+  if(!name) return;
+  if(state.rooms[name]){showToast('이미 있는 방 이름!');return;}
+  state.rooms[name]={folders:[],tracks:[]};
+  document.getElementById('newRoomName').value='';
+  switchRoom(name);
+}
+function deleteRoom(name) {
+  if(!confirm('"'+name+'" 삭제?')) return;
+  delete state.rooms[name];
+  var k=Object.keys(state.rooms);
+  if(!k.length){state.rooms['기본 방']={folders:[],tracks:[]};k=['기본 방'];}
+  switchRoom(state.currentRoom===name?k[0]:state.currentRoom);
+}
+function saveRoom(){saveState();showToast('💾 저장 완료!');}
+function exportAll(){
+  var b=new Blob([JSON.stringify(state.rooms,null,2)],{type:'application/json'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='jukebox_rooms.json';a.click();
+  showToast('📤 내보내기 완료!');
+}
+function importRooms(e){
+  var f=e.target.files[0];if(!f)return;
+  var r=new FileReader();
+  r.onload=function(ev){try{var d=JSON.parse(ev.target.result);if(typeof d==='object'){Object.assign(state.rooms,d);saveState();switchRoom(Object.keys(state.rooms)[0]);showToast('📥 불러오기 완료!');}}catch(err){showToast('파일 오류!');}};
+  r.readAsText(f);e.target.value='';
+}
+
+// FOLDERS
+function renderFolders(){
+  var list=document.getElementById('folderList');list.innerHTML='';
+  (rd().folders||[]).forEach(function(f){
+    var d=document.createElement('div');d.style.cssText='display:flex;align-items:center;gap:5px;';
+    d.innerHTML='<div style="font-family:DotGothic16,monospace;font-size:11px;flex:1;padding:5px 8px;border:2px solid var(--border);background:var(--offwhite);">'+esc(f)+'</div>'
+      +'<span class="room-del">✕</span>';
+    d.querySelector('.room-del').onclick=function(){deleteFolder(f);};
+    list.appendChild(d);
+  });
+}
+function addFolder(){
+  var name=document.getElementById('newFolderName').value.trim();if(!name)return;
+  var r=rd();if(!r.folders)r.folders=[];
+  if(r.folders.includes(name)){showToast('이미 있는 폴더!');return;}
+  r.folders.push(name);document.getElementById('newFolderName').value='';
+  saveState();renderFolders();renderFolderSelects();
+}
+function deleteFolder(name){
+  var r=rd();r.folders=(r.folders||[]).filter(function(f){return f!==name;});
+  saveState();renderFolders();renderFolderSelects();
+}
+function renderFolderSelects(){
+  var folders=rd().folders||[];
+  ['ytFolder','filterFolder'].forEach(function(id){
+    var sel=document.getElementById(id),cur=sel.value;
+    while(sel.options.length>(id==='filterFolder'?1:0))sel.remove(id==='filterFolder'?1:0);
+    if(id==='ytFolder'){var o=document.createElement('option');o.value='';o.textContent='폴더 없음';sel.appendChild(o);}
+    folders.forEach(function(f){var o=document.createElement('option');o.value=f;o.textContent=f;sel.appendChild(o);});
+    if(cur)sel.value=cur;
+  });
+}
+
+// TRACKS
+function extractYtId(url){
+  var m=url.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([\w-]{11})/);return m?m[1]:null;
+}
+function addTrack(){
+  var url=document.getElementById('ytUrl').value.trim();
+  var title=document.getElementById('ytTitle').value.trim();
+  var folder=document.getElementById('ytFolder').value;
+  var ytId=extractYtId(url);
+  if(!ytId){showToast('유효한 YouTube URL을 입력하세요!');return;}
+  if(!title)title='Track '+(rd().tracks.length+1);
+  rd().tracks.push({id:Date.now(),ytId:ytId,title:title,folder:folder});
+  document.getElementById('ytUrl').value='';
+  document.getElementById('ytTitle').value='';
+  saveState();renderQueue();showToast('♪ 트랙 추가됨!');
+}
+function renderQueue(){
+  var tracks=rd().tracks||[];
+  var filter=document.getElementById('filterFolder').value;
+  var shown=filter?tracks.filter(function(t){return t.folder===filter;}):tracks;
+  var list=document.getElementById('queueList');list.innerHTML='';
+  document.getElementById('queueCount').textContent='('+shown.length+')';
+  if(!shown.length){list.innerHTML='<div class="empty-queue">트랙이 없어요 ★ 유튜브 링크를 추가해보세요!</div>';return;}
+  shown.forEach(function(track,i){
+    var gi=tracks.indexOf(track);
+    var row=document.createElement('div');
+    row.className='track-row'+(gi===state.currentIdx?' playing':'');
+    row.innerHTML='<span class="track-num">'+(gi===state.currentIdx?'♪':(i+1))+'</span>'
+      +'<div class="track-thumb">▶</div>'
+      +'<div class="track-info"><div class="track-name">'+esc(track.title)+'</div><div class="track-tag">'+(track.folder||'폴더 없음')+'</div></div>'
+      +(state.role==='GM'?'<span class="track-del">✕</span>':'');
+    if(state.role==='GM')row.querySelector('.track-del').onclick=function(e){e.stopPropagation();deleteTrack(track.id);};
+    row.onclick=function(e){if(e.target.classList.contains('track-del'))return;playTrackAt(gi);};
+    list.appendChild(row);
+  });
+}
+function deleteTrack(id){rd().tracks=rd().tracks.filter(function(t){return t.id!==id;});saveState();renderQueue();}
+function clearQueue(){if(!confirm('큐 전부 삭제?'))return;rd().tracks=[];state.currentIdx=-1;if(ytPlayer&&ytPlayer.stopVideo)ytPlayer.stopVideo();document.getElementById('yt-player-wrap').classList.remove('visible');setPlayingUI(false);saveState();renderQueue();}
+
+// PLAYBACK
+function playTrackAt(idx){
+  var tracks=rd().tracks;if(idx<0||idx>=tracks.length)return;
+  state.currentIdx=idx;state.playing=true;
+  var track=tracks[idx];
+  document.getElementById('nowTitle').textContent=track.title;
+  document.getElementById('nowSub').textContent=track.folder||'폴더 없음';
+  loadAndPlay(track.ytId);
+  renderQueue();
+}
+function togglePlay(){
+  if(state.currentIdx<0){var t=rd().tracks;if(t.length)playTrackAt(0);return;}
+  if(!ytPlayer||!ytPlayer.getPlayerState)return;
+  var ps=ytPlayer.getPlayerState();
+  if(ps===1){ytPlayer.pauseVideo();}else{ytPlayer.playVideo();}
+}
+function nextTrack(){
+  var t=rd().tracks;if(!t.length)return;
+  playTrackAt(state.shuffle?Math.floor(Math.random()*t.length):(state.currentIdx+1)%t.length);
+}
+function prevTrack(){
+  var t=rd().tracks;if(!t.length)return;
+  playTrackAt(state.currentIdx<=0?t.length-1:state.currentIdx-1);
+}
+function toggleShuffle(){state.shuffle=!state.shuffle;document.getElementById('shuffleBtn').classList.toggle('on',state.shuffle);}
+function toggleRepeat(){state.repeat=!state.repeat;document.getElementById('repeatBtn').classList.toggle('on',state.repeat);}
+function setPlayingUI(p){
+  state.playing=p;
+  document.getElementById('playBtn').textContent=p?'⏸':'▶';
+  document.getElementById('albumArt').classList.toggle('playing',p);
+  document.getElementById('equalizer').classList.toggle('active',p);
+}
+
+function renderAll(){renderRooms();renderFolders();renderFolderSelects();renderQueue();}
+setRole('GM');
+renderAll();
+</script>
+</body>
+</html>
